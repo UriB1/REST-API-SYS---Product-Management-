@@ -1,0 +1,59 @@
+[
+    {
+      "required_field": "unique_id_001",
+      "title": "Monopoly",
+      "description": "A game for the entire family!",
+      "price": 19.99,
+      "category": "Game"
+    },
+    {
+      "required_field": "unique_id_002",
+      "title": "Scrabble",
+      "description": "A classic word game for players of all ages.",
+      "price": 24.99,
+      "category": "Game"
+    },
+    {
+      "required_field": "unique_id_003",
+      "title": "Elder Scrolls V: Skyrim",
+      "description": "An open-world action RPG with expansive quests and adventures.",
+      "price": 59.99,
+      "category": "Video Game"
+    },
+    {
+      "required_field": "unique_id_004",
+      "title": "Guitar Hero",
+      "description": "A music rhythm game where you play guitar along with rock songs.",
+      "price": 49.99,
+      "category": "Video Game"
+    },
+    {
+      "required_field": "unique_id_005",
+      "title": "Smartwatch",
+      "description": "A smartwatch with fitness tracking and notifications.",
+      "price": 199.99,
+      "category": "Electronics"
+    },
+    {
+      "required_field": "unique_id_006",
+      "title": "Wireless Mouse",
+      "description": "A high-precision wireless mouse with ergonomic design.",
+      "price": 29.99,
+      "category": "Electronics"
+    },
+    {
+      "required_field": "unique_id_007",
+      "title": "Mountain Bike",
+      "description": "A durable mountain bike with shock absorbers and multiple gears.",
+      "price": 499.99,
+      "category": "Sports"
+    },
+    {
+      "required_field": "unique_id_008",
+      "title": "Yoga Block",
+      "description": "A foam yoga block for enhancing your stretching and poses.",
+      "price": 12.99,
+      "category": "Sports"
+    }
+  ]
+  

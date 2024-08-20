@@ -1,0 +1,22 @@
+[
+    {
+        "email": "testuser@example.com",
+        "password": "SecurePassword1!"
+    },
+    {
+        "email": "johndoe123@gmail.com",
+        "password": "Johndoe2023!"
+    },
+    {
+        "email": "mary.smith@outlook.com",
+        "password": "M@rySm1th#45"
+    },
+    {
+        "email": "alex_jones@yahoo.com",
+        "password": "A1exJon3s$"
+    },
+    {
+        "email": "sara_davis@example.org",
+        "password": "SaraDav!s789"
+    }
+]
