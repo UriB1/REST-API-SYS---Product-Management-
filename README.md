@@ -101,3 +101,9 @@ This project involves developing a REST API system for managing products using F
 
 8. **Access the API:**
    - Use tools like Postman to interact with the API endpoints.
+
+## Contributing
+Feel free to contribute by opening issues or creating pull requests.
+
+## Author
+[UriB1](https://github.com/UriB1)
