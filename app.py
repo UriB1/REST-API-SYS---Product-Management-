@@ -9,15 +9,21 @@ from flask_caching import Cache
 from config import Config
 from utils import auth_required
 
-
+# Initialize Flask application
 app = Flask(__name__)
+
+# Load configuration from the Config class
 app.config.from_object(Config)
-cache = Cache(app, config={'CACHE_TYPE': 'simple'})  # Simple in-memory cache
+
+# Initialize cache with simple in-memory cache
+cache = Cache(app, config={'CACHE_TYPE': 'simple'})
 cache.init_app(app)
 
-# Initialize Firebase Admin SDK
+# Initialize Firebase Admin SDK with service account credentials
 cred = credentials.Certificate(app.config['FIREBASE_SERVICE_ACCOUNT_KEY'])
 firebase_admin.initialize_app(cred, {'databaseURL': app.config['FIREBASE_DB_URL']})
+
+# Firebase authentication client
 auth_client = auth  # Firebase Admin SDK auth module for user management
 
 # User Registration Endpoint
@@ -28,21 +34,28 @@ def register():
         email = data.get('email')
         password = data.get('password')
 
-        # Validate email and password
+        # Validate email and password format
         if not utils.validate_email_format(email) or not utils.validate_password_strength(password):
             return jsonify({'error': 'Invalid email or weak password format'}), 400
 
         try:
+            # Create a new user in Firebase Authentication
             user = auth.create_user(
                 email=email,
                 password=password
             )
             user_id = user.uid
+            # Store user details in Firebase Realtime Database
             db.reference(f'users/{user_id}').set({
                 'email': email,
                 'user_id': user_id,
             })
             return jsonify({'message': 'User registered successfully'}), 201
+        
+        except auth.EmailAlreadyExistsError:
+            logging.error(f'Error: Email {email} already exists.')
+            return jsonify({'error': 'Email already exists. Please use a different email address.'}), 400
+
         except Exception as e:
             logging.error(f'Error during user registration: {str(e)}')
             return jsonify({'error': 'An error occurred while registering the user'}), 400
@@ -53,16 +66,23 @@ product_ref = db.reference('products')
 @auth_required(auth_client)
 def upload_product():
     try:
+        # Extract and verify the authorization token
         token = request.headers.get('Authorization', '').split(' ')[1]
         user = auth.verify_id_token(token)
         user_id = user['uid']
+        
+        # Get the product data from the request
         data = request.get_json()
         if 'required_field' not in data:
             return jsonify({'error': 'Required field missing'}), 400
+        
+        # Add user ID to the product data
         data['user_id'] = user_id
-        product_id = product_ref.push().key
+        product_id = product_ref.push().key  # Generate a new product ID
         data['product_id'] = product_id
+        # Store the product data in Firebase Realtime Database
         product_ref.child(product_id).set(data)
+        
         logging.info(f"Request IP: {get_remote_address()}")
         return jsonify({'message': 'Product uploaded successfully'}), 201
     except Exception as e:
@@ -73,19 +93,21 @@ def upload_product():
 @auth_required(auth_client)
 def user_products():
     try:
+        # Extract and verify the authorization token
         token = request.headers.get('Authorization', '').split(' ')[1]
         user = auth.verify_id_token(token)
         user_id = user['uid']
         app.logger.info(f"Request IP: {get_remote_address()}")
 
-        # Cache key
+        # Cache key for user products
         cache_key = 'user_products_' + user_id
 
-        # Get or set cached products
+        # Try to get cached products
         products = cache.get(cache_key)
         if products is None:
+            # Fetch user products from Firebase Realtime Database
             products = db.reference('products').order_by_child('user_id').equal_to(user_id).get()
-            cache.set(cache_key, products)
+            cache.set(cache_key, products)  # Cache the products
 
         return jsonify(products), 200
     except Exception as e:
@@ -97,6 +119,7 @@ def user_products():
 @auth_required(auth_client)
 def delete_product(product_id):
     try:
+        # Extract and verify the authorization token
         token = request.headers.get('Authorization', '').split(' ')[1]
         if not token:
             return jsonify({'error': 'Empty or malformed token'}), 403
@@ -107,14 +130,16 @@ def delete_product(product_id):
         product = product_ref.get()
 
         if product is None:
-            # Product doesn't exist
+            # Product does not exist
             return jsonify({'error': f'Product with ID {product_id} does not exist'}), 404
 
         if 'user_id' in product and product['user_id'] == user_id:
+            # Delete the product if it belongs to the user
             logging.info(f"Product with ID {product_id} deleted by user {user_id}")
             product_ref.delete()
             return jsonify({'message': f'Product with ID {product_id} deleted successfully'}), 200
         else:
+            # Unauthorized access attempt
             logging.error(f"Unauthorized deletion attempt for product with ID {product_id} by user {user_id}")
             return jsonify({'error': 'Unauthorized'}), 403
     except Exception as e:
@@ -162,7 +187,7 @@ def all_products():
 @auth_required(auth_client)
 def update_product(product_id):
     try:
-        # Extract the authorization token and verify it
+        # Extract and verify the authorization token
         token = request.headers.get('Authorization', '').split(' ')[1]
         user = auth.verify_id_token(token)
         user_id = user['uid']
@@ -184,7 +209,7 @@ def update_product(product_id):
         if not data:
             return jsonify({'error': 'No data provided for update'}), 400
 
-        # Update the product
+        # Update the product with new data
         product_ref.update(data)
         logging.info(f'Product with ID {product_id} updated successfully by user {user_id}')
         return jsonify({'message': 'Product updated successfully'}), 200
@@ -236,6 +261,6 @@ def products_by_category(category_name):
     except Exception as e:
         return jsonify({'error': 'An error occurred while fetching products'}), 500
 
-# Main entry point
+# Main entry point of the application
 if __name__ == '__main__':
-    app.run(debug=True)
+    app.run(debug=True)  # Run the Flask application in debug mode
