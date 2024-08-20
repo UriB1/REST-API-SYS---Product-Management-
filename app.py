@@ -102,12 +102,18 @@ def delete_product(product_id):
             return jsonify({'error': 'Empty or malformed token'}), 403
         user = auth.verify_id_token(token)
         user_id = user['uid']
+
         product_ref = db.reference(f'products/{product_id}')
         product = product_ref.get()
-        if product and 'user_id' in product and product['user_id'] == user_id:
+
+        if product is None:
+            # Product doesn't exist
+            return jsonify({'error': f'Product with ID {product_id} does not exist'}), 404
+
+        if 'user_id' in product and product['user_id'] == user_id:
             logging.info(f"Product with ID {product_id} deleted by user {user_id}")
             product_ref.delete()
-            return jsonify({'message': 'Product deleted successfully'}), 200
+            return jsonify({'message': f'Product with ID {product_id} deleted successfully'}), 200
         else:
             logging.error(f"Unauthorized deletion attempt for product with ID {product_id} by user {user_id}")
             return jsonify({'error': 'Unauthorized'}), 403
@@ -120,15 +126,14 @@ def delete_product(product_id):
 @auth_required(auth_client)
 def product_info(product_id):
     try:
-        if not product_id.isnumeric():
-            return jsonify({'error': 'Invalid product ID format'}), 400
         product = db.reference(f'products/{product_id}').get()
+        
         if product:
             app.logger.info(f"Product with ID {product_id} accessed successfully.")
             return jsonify(product), 200
         else:
             app.logger.error(f"Product with ID {product_id} not found.")
-            return jsonify({'error': 'Product not found'}), 404
+            return jsonify({'error': f'Product with ID {product_id} not found'}), 404
     except Exception as e:
         app.logger.error(f"An error occurred while accessing the database: {str(e)}")
         return jsonify({'error': 'An error occurred while accessing the database'}), 500
@@ -141,8 +146,11 @@ def all_products():
     try:
         products = db.reference('products').get()
         app.logger.debug(f'Retrieved products: {products}')
-        if products is not None and isinstance(products, dict):
+        
+        if products is not None and isinstance(products, dict) and products:
             return jsonify(products), 200
+        elif products == {}:
+            return jsonify({"message": "No products available"}), 200
         else:
             return jsonify({"error": "Invalid data retrieved"}), 500
     except Exception as e:
@@ -154,42 +162,65 @@ def all_products():
 @auth_required(auth_client)
 def update_product(product_id):
     try:
+        # Extract the authorization token and verify it
         token = request.headers.get('Authorization', '').split(' ')[1]
         user = auth.verify_id_token(token)
         user_id = user['uid']
+
+        # Reference the product from the database
         product_ref = db.reference(f'products/{product_id}')
         product = product_ref.get()
 
         if not product:
-            logging.error('Product not found')
+            logging.error(f'Product with ID {product_id} not found.')
             return jsonify({'error': 'Product not found'}), 404
 
         if product['user_id'] != user_id:
-            logging.error('Unauthorized access to update product')
+            logging.error(f'Unauthorized update attempt on product {product_id} by user {user_id}')
             return jsonify({'error': 'Unauthorized'}), 403
 
+        # Get the updated data from the request
         data = request.get_json()
+        if not data:
+            return jsonify({'error': 'No data provided for update'}), 400
+
+        # Update the product
         product_ref.update(data)
-        logging.info('Product updated successfully')
+        logging.info(f'Product with ID {product_id} updated successfully by user {user_id}')
         return jsonify({'message': 'Product updated successfully'}), 200
+
     except Exception as e:
+        logging.error(f'An error occurred: {str(e)}')
         return jsonify({'error': 'An error occurred while updating the product'}), 500
 
 # Search Products Endpoint
 @app.route('/search_products', methods=['GET'])
-@cache.cached(timeout=300, key_prefix='search_results')
 @auth_required(auth_client)
 def search_products():
     query = request.args.get('query')
-    if not isinstance(query, str):
-        return jsonify({'error': 'Search query is required'}), 400
-    query = query.strip()  # Sanitize input
+
+    # Validate search query
+    if not query or not isinstance(query, str):
+        return jsonify({'error': 'Search query is required and should be a string'}), 400
+
+    query = query.strip()  # Sanitize and standardize the query input
 
     logging.info(f"Search query: {query}")
-    products = db.reference('products').order_by_child('title').equal_to(query.lower()).get()
-    logging.info(f"Search results: {products}")
 
-    return jsonify(products), 200
+    try:
+        # Perform the search in the Firebase Realtime Database based on the title
+        products = db.reference('products').order_by_child('title').equal_to(query).get()
+
+        if products:
+            logging.info(f"Search results for query '{query}': {products}")
+            return jsonify(products), 200
+        else:
+            logging.info(f"No products found for query '{query}'")
+            return jsonify({'message': f"No products found for query '{query}'"}), 404
+
+    except Exception as e:
+        logging.error(f"An error occurred while searching for products: {str(e)}")
+        return jsonify({'error': 'An error occurred while searching for products'}), 500
 
 # Filter Products by Category Endpoint
 @app.route('/products_by_category/<category_name>', methods=['GET'])
