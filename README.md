@@ -83,14 +83,23 @@ This project involves developing a REST API system for managing products using F
    ```bash
    pip install -r requirements.txt
 
-5. **Set Up Environment Variables:**
-   - Create a .env file in the project root with necessary environment variables (e.g., Firebase credentials).
+5. **Obtain Firebase Credentials:**
+   - Download your serviceAccountKey.json file from the Firebase Console:
+      - Go to the Firebase Console.
+      - Select your project.
+      - Navigate to Project Settings > Service accounts.
+      - Click "Generate new private key" to download the serviceAccountKey.json file.
+   - Place the serviceAccountKey.json file in the project root directory.
 
-6. **Run the Flask Application:**
+6. **Set Up Environment Variables:**
+   - Create a .env file in the project root with necessary environment variables. Ensure that it includes the path to your serviceAccountKey.json file and any other configuration values required by your application.
+
+7. **Run the Flask Application:**
    ```bash
    python app.py
 
-7. **Access the API:**
+8. **Access the API:**
    - Use tools like Postman to interact with the API endpoints.
+
 
 Note: This project is unfinished.
