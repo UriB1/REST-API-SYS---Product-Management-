@@ -19,7 +19,7 @@ This project involves developing a REST API system for managing products using F
 ### Retrieve User Products
 
 - **Endpoint:** [GET] `/user_products`
-- **Description:** Retrieves all products uploaded by the authenticated user.
+- **Description:** Retrieves all products uploaded by the authenticated user. Uses a simple cache mechanism for the results.
 
 ### Delete Product
 
@@ -84,6 +84,7 @@ This project involves developing a REST API system for managing products using F
    pip install -r requirements.txt
 
 5. **Obtain Firebase Credentials:**
+   - Register or sign in to your Firebase account.
    - Download your serviceAccountKey.json file from the Firebase Console:
       - Go to the Firebase Console.
       - Select your project.
@@ -100,6 +101,3 @@ This project involves developing a REST API system for managing products using F
 
 8. **Access the API:**
    - Use tools like Postman to interact with the API endpoints.
-
-
-Note: This project is unfinished.

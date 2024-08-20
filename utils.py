@@ -64,7 +64,7 @@ def auth_required(auth_client):
             token = auth_header.split(' ')[1]
             try:
                 user = auth_client.verify_id_token(token)
-                request.user = user  # Optional: Attach user to request object
+                request.user = user
             except Exception as e:
                 return jsonify({'error': 'Invalid or expired token'}), 401
             return f(*args, **kwargs)
